@@ -42,6 +42,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
 
+    # MUST be high in middleware stack
     'corsheaders.middleware.CorsMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -53,13 +54,25 @@ MIDDLEWARE = [
 ]
 
 # ======================
-# CORS
+# CORS (FIXED)
 # ======================
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://u-stride-app.vercel.app",
 ]
 
+# safer than opening everything
 CORS_ALLOW_ALL_ORIGINS = False
+
+# IMPORTANT for login/auth requests
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "accept",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+]
 
 # ======================
 # URLS / WSGI
@@ -69,7 +82,7 @@ ROOT_URLCONF = 'ecommerceApiProject.urls'
 WSGI_APPLICATION = 'ecommerceApiProject.wsgi.application'
 
 # ======================
-# TEMPLATES (FIX FOR ADMIN ERROR)
+# TEMPLATES
 # ======================
 TEMPLATES = [
     {
@@ -88,7 +101,7 @@ TEMPLATES = [
 ]
 
 # ======================
-# DATABASE (RENDER POSTGRES READY)
+# DATABASE (RENDER)
 # ======================
 DATABASES = {
     'default': dj_database_url.config(
@@ -124,7 +137,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ======================
-# MEDIA (LOCAL ONLY FOR NOW)
+# MEDIA
 # ======================
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -133,10 +146,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # DEFAULTS
 # ======================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 AUTH_USER_MODEL = 'apiApp.CustomUser'
 
 # ======================
-# REST FRAMEWORK
+# REST FRAMEWORK (JWT)
 # ======================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
