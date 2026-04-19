@@ -40,13 +40,14 @@ INSTALLED_APPS = [
 # ======================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 
-    # MUST be high in middleware stack
     'corsheaders.middleware.CorsMiddleware',
+
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -54,24 +55,21 @@ MIDDLEWARE = [
 ]
 
 # ======================
-# CORS (FIXED)
+# CORS
 # ======================
+CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "https://u-stride-app.vercel.app",
 ]
 
-# safer than opening everything
-CORS_ALLOW_ALL_ORIGINS = False
-
-# IMPORTANT for login/auth requests
 CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
     "accept",
     "origin",
-    "user-agent",
-    "x-csrftoken",
+    "x-requested-with",
 ]
 
 # ======================
@@ -101,11 +99,11 @@ TEMPLATES = [
 ]
 
 # ======================
-# DATABASE (RENDER)
+# DATABASE
 # ======================
 DATABASES = {
     'default': dj_database_url.config(
-        default=config("DATABASE_URL", default=""),
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
         conn_max_age=600
     )
 }
@@ -150,7 +148,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'apiApp.CustomUser'
 
 # ======================
-# REST FRAMEWORK (JWT)
+# REST FRAMEWORK
 # ======================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -162,3 +160,29 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+# ======================
+# AUTO SUPERUSER (TEMP FIX)
+# ======================
+import django
+
+def create_superuser():
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+
+    email = "timoajewole@gmail.com"
+    password = "timo1234"
+
+    if not User.objects.filter(email=email).exists():
+        User.objects.create_superuser(
+            email=email,
+            password=password
+        )
+
+if os.environ.get("CREATE_SUPERUSER") == "True":
+    try:
+        django.setup()
+        create_superuser()
+    except Exception as e:
+        print("Superuser creation error:", e)
