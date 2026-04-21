@@ -3,7 +3,11 @@ import os
 import dj_database_url
 from datetime import timedelta
 from decouple import config
+import cloudinary
 
+# ======================
+# BASE DIR
+# ======================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ======================
@@ -19,13 +23,30 @@ ALLOWED_HOSTS = [
 ]
 
 # ======================
-# CLOUDINARY STORAGE CONFIG (FIXED)
+# CLOUDINARY CONFIG (CRITICAL FIX)
 # ======================
+cloudinary.config(
+    cloud_name=config("CLOUDINARY_CLOUD_NAME"),
+    api_key=config("CLOUDINARY_API_KEY"),
+    api_secret=config("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME"),
     "API_KEY": config("CLOUDINARY_API_KEY"),
     "API_SECRET": config("CLOUDINARY_API_SECRET"),
 }
+
+CLOUDINARY = {
+    "secure": True,
+    "resource_type": "image",
+    "quality": "auto",
+    "fetch_format": "auto",
+}
+
+# Optional fallback (helps in some deployments)
+CLOUDINARY_URL = f"cloudinary://{config('CLOUDINARY_API_KEY')}:{config('CLOUDINARY_API_SECRET')}@{config('CLOUDINARY_CLOUD_NAME')}"
 
 # ======================
 # APPLICATIONS
@@ -133,11 +154,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# ======================
-# CLOUDINARY (MODERN DJANGO WAY - IMPORTANT FIX)
-# ======================
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -147,11 +163,13 @@ STORAGES = {
     },
 }
 
+# Backward compatibility (IMPORTANT)
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
 # ======================
 # DEFAULTS
 # ======================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 AUTH_USER_MODEL = 'apiApp.CustomUser'
 
 # ======================
@@ -167,26 +185,3 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
-
-# ======================
-# OPTIONAL SUPERUSER
-# ======================
-import django
-
-def create_superuser():
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
-
-    email = "timoajewole@gmail.com"
-    password = "timo1234"
-
-    if not User.objects.filter(email=email).exists():
-        User.objects.create_superuser(email=email, password=password)
-
-if os.environ.get("CREATE_SUPERUSER") == "True":
-    try:
-        django.setup()
-        create_superuser()
-    except Exception as e:
-        print("Superuser creation error:", e)
