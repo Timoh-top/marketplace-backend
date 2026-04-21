@@ -29,7 +29,7 @@ class MyTokenView(TokenObtainPairView):
 
 
 # =====================================================
-# 👤 REGISTER
+# 👤 REGISTER USER
 # =====================================================
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -71,28 +71,29 @@ def get_profile(request):
 
 
 # =====================================================
-# 🛍 PRODUCT LIST + CREATE
+# 🛍 PRODUCTS (GET ONLY - SAFE)
 # =====================================================
-@api_view(["GET", "POST"])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def product_list(request):
+    products = Product.objects.all().order_by("-created_at")
+    serializer = ProductSerializer(products, many=True)
+    return Response(serializer.data)
 
-    if request.method == "GET":
-        products = Product.objects.all().order_by("-created_at")
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
 
-    if request.method == "POST":
-        if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=401)
+# =====================================================
+# 🛍 CREATE PRODUCT (AUTH REQUIRED - CLEAN SEPARATE ENDPOINT)
+# =====================================================
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_product(request):
+    serializer = ProductSerializer(data=request.data)
 
-        serializer = ProductSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(vendor=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if serializer.is_valid():
-            serializer.save(vendor=request.user)
-            return Response(serializer.data, status=201)
-
-        return Response(serializer.errors, status=400)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # =====================================================
@@ -101,7 +102,6 @@ def product_list(request):
 @api_view(["GET", "PUT", "DELETE"])
 @permission_classes([AllowAny])
 def product_detail(request, id):
-
     product = get_object_or_404(Product, id=id)
 
     if request.method == "GET":
@@ -109,7 +109,7 @@ def product_detail(request, id):
         return Response(serializer.data)
 
     if request.method == "PUT":
-        if product.vendor != request.user:
+        if request.user != product.vendor:
             return Response({"error": "Not allowed"}, status=403)
 
         serializer = ProductSerializer(product, data=request.data, partial=True)
@@ -121,7 +121,7 @@ def product_detail(request, id):
         return Response(serializer.errors, status=400)
 
     if request.method == "DELETE":
-        if product.vendor != request.user:
+        if request.user != product.vendor:
             return Response({"error": "Not allowed"}, status=403)
 
         product.delete()
@@ -139,10 +139,61 @@ def category_list(request):
     return Response(serializer.data)
 
 
-# =====================================================
-# ⭐ REVIEWS (RESTORED — THIS FIXES YOUR ERROR)
-# =====================================================
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def category_detail(request, slug):
+    category = get_object_or_404(Category, slug=slug)
+    serializer = CategorySerializer(category)
+    return Response(serializer.data)
 
+
+# =====================================================
+# 🛒 CART
+# =====================================================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_cart(request):
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    serializer = CartSerializer(cart)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_to_cart(request):
+    product_id = request.data.get("product_id")
+    quantity = int(request.data.get("quantity", 1))
+
+    product = get_object_or_404(Product, id=product_id)
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+
+    item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product
+    )
+
+    item.quantity = quantity if created else item.quantity + quantity
+    item.save()
+
+    return Response({"message": "Added to cart"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def update_cartitem_quantity(request):
+    item_id = request.data.get("item_id")
+    quantity = int(request.data.get("quantity", 1))
+
+    item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+    item.quantity = quantity
+    item.save()
+
+    return Response({"message": "Cart updated"})
+
+
+# =====================================================
+# ⭐ REVIEWS
+# =====================================================
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_review(request):
@@ -175,8 +226,8 @@ def update_review(request):
 def delete_review(request):
     review_id = request.data.get("review_id")
     review = get_object_or_404(Review, id=review_id, user=request.user)
-
     review.delete()
+
     return Response({"message": "Deleted"})
 
 
@@ -196,7 +247,11 @@ def get_wishlist(request):
 def delete_from_wishlist(request):
     product_id = request.data.get("product_id")
 
-    item = get_object_or_404(Wishlist, user=request.user, product_id=product_id)
+    item = get_object_or_404(
+        Wishlist,
+        user=request.user,
+        product_id=product_id
+    )
     item.delete()
 
     return Response({"message": "Removed from wishlist"})
