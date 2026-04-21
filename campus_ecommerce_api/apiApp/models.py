@@ -39,7 +39,7 @@ class CustomUserManager(BaseUserManager):
 
 
 # =====================================================
-# 👤 USER MODEL
+# 👤 USER MODEL (CLOUDINARY SAFE)
 # =====================================================
 class CustomUser(AbstractUser):
     username = models.CharField(max_length=150, unique=True)
@@ -51,8 +51,13 @@ class CustomUser(AbstractUser):
         default="buyer"
     )
 
-    # ✔ Cloudinary FIX
-    profile_picture = CloudinaryField('image', blank=True, null=True)
+    # ✅ CLOUDINARY FIX (SAFE + RELIABLE)
+    profile_picture = CloudinaryField(
+        'image',
+        blank=True,
+        null=True,
+        folder="users/profile_pictures"
+    )
 
     is_verified = models.BooleanField(default=False)
 
@@ -96,15 +101,20 @@ class Category(models.Model):
 
 
 # =====================================================
-# 🛍 PRODUCT (CLOUDINARY FIXED)
+# 🛍 PRODUCT (FULL CLOUDINARY RELIABLE FIX)
 # =====================================================
 class Product(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
-    # ✔ Cloudinary FIX
-    image = CloudinaryField('image', blank=True, null=True)
+    # ✅ CLOUDINARY FIX (IMPORTANT)
+    image = CloudinaryField(
+        'image',
+        blank=True,
+        null=True,
+        folder="products"
+    )
 
     slug = models.SlugField(unique=True, blank=True)
 
@@ -124,7 +134,9 @@ class Product(models.Model):
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # ✔ Slug generator
+    # =================================================
+    # SLUG GENERATOR (CLEAN)
+    # =================================================
     def generate_unique_slug(self):
         base_slug = slugify(self.name)
         unique_slug = base_slug
@@ -139,10 +151,11 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.generate_unique_slug()
-
         super().save(*args, **kwargs)
 
-    # ✔ Safe rating
+    # =================================================
+    # SAFE RATING
+    # =================================================
     def average_rating(self):
         return self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0
 
@@ -151,7 +164,7 @@ class Product(models.Model):
 
 
 # =====================================================
-# ⭐ REVIEW (FIXED — ADDED created_at)
+# ⭐ REVIEW
 # =====================================================
 class Review(models.Model):
     product = models.ForeignKey(
@@ -165,7 +178,7 @@ class Review(models.Model):
     rating = models.PositiveIntegerField()
     review = models.TextField(blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)  # ✔ FIXED
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ("product", "user")
@@ -200,7 +213,12 @@ class CartItem(models.Model):
 # ❤️ WISHLIST
 # =====================================================
 class Wishlist(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wishlist")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wishlist"
+    )
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     class Meta:
