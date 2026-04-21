@@ -9,7 +9,6 @@ urlpatterns = [
     # =====================================================
     path('products/', views.product_list),
     path('products/<int:id>/', views.product_detail),
-    path('products/<int:id>/delete/', views.delete_product),
     path('products/create/', views.create_product),
 
     # =====================================================
