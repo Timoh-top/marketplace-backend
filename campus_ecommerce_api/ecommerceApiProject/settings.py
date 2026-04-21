@@ -3,7 +3,6 @@ import os
 import dj_database_url
 from datetime import timedelta
 from decouple import config
-import cloudinary
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,14 +19,13 @@ ALLOWED_HOSTS = [
 ]
 
 # ======================
-# CLOUDINARY INIT (CRITICAL FIX)
+# CLOUDINARY STORAGE CONFIG (FIXED)
 # ======================
-cloudinary.config(
-    cloud_name=config("CLOUDINARY_CLOUD_NAME"),
-    api_key=config("CLOUDINARY_API_KEY"),
-    api_secret=config("CLOUDINARY_API_SECRET"),
-    secure=True
-)
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": config("CLOUDINARY_API_KEY"),
+    "API_SECRET": config("CLOUDINARY_API_SECRET"),
+}
 
 # ======================
 # APPLICATIONS
@@ -40,13 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    "apiApp",
-    "rest_framework",
     "corsheaders",
+    "rest_framework",
 
-    # Cloudinary
     "cloudinary",
     "cloudinary_storage",
+
+    "apiApp",
 ]
 
 # ======================
@@ -76,16 +74,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://u-stride-app.vercel.app",
 ]
 
-CORS_ALLOW_HEADERS = [
-    "authorization",
-    "content-type",
-    "accept",
-    "origin",
-    "x-requested-with",
-]
-
 # ======================
-# ROOT
+# ROOT CONFIG
 # ======================
 ROOT_URLCONF = 'ecommerceApiProject.urls'
 WSGI_APPLICATION = 'ecommerceApiProject.wsgi.application'
@@ -146,9 +136,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ======================
-# MEDIA (CLOUDINARY STORAGE)
+# CLOUDINARY (MODERN DJANGO WAY - IMPORTANT FIX)
 # ======================
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # ======================
 # DEFAULTS
@@ -172,7 +169,7 @@ SIMPLE_JWT = {
 }
 
 # ======================
-# SUPERUSER AUTO (OPTIONAL)
+# OPTIONAL SUPERUSER
 # ======================
 import django
 
