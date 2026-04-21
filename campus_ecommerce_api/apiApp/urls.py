@@ -9,15 +9,15 @@ urlpatterns = [
     # =====================================================
     # 🛍 PRODUCTS (FIXED: ID BASED)
     # =====================================================
-    path('products/', views.product_list, name='product_list'),
-    path('products/<int:id>/', views.product_detail, name='product_detail'),
-    path("products/<int:id>/delete/", views.delete_product, name="delete_product"),
+    path('products/', views.product_list),
+    path('products/<int:id>/', views.product_detail),
+    path("products/<int:id>/delete/", views.delete_product),
       # ✅ FIXED
 
     # =====================================================
     # 📂 CATEGORIES
     # =====================================================
-    path('categories/', views.category_list, name='category_list'),
+    path('categories/', views.category_list),
     path('categories/<slug:slug>/', views.category_detail, name='category_detail'),
 
     # =====================================================
