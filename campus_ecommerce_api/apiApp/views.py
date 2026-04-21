@@ -73,27 +73,27 @@ def get_profile(request):
 # =====================================================
 # 🛍 PRODUCTS (GET ONLY - SAFE)
 # =====================================================
-@api_view(["GET"])
-@permission_classes([AllowAny])
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])  # FIXED
+
 def product_list(request):
-    products = Product.objects.all().order_by("-created_at")
-    serializer = ProductSerializer(products, many=True)
-    return Response(serializer.data)
 
+    # GET products
+    if request.method == "GET":
+        products = Product.objects.all().order_by("-created_at")
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
 
-# =====================================================
-# 🛍 CREATE PRODUCT (AUTH REQUIRED - CLEAN SEPARATE ENDPOINT)
-# =====================================================
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def create_product(request):
-    serializer = ProductSerializer(data=request.data)
+    # POST product
+    if request.method == "POST":
+        serializer = ProductSerializer(data=request.data)
 
-    if serializer.is_valid():
-        serializer.save(vendor=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save(vendor=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # =====================================================
@@ -179,17 +179,27 @@ def add_to_cart(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])  # FIXED SECURITY ISSUE
 def update_cartitem_quantity(request):
     item_id = request.data.get("item_id")
-    quantity = int(request.data.get("quantity", 1))
 
-    item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+    # SAFE quantity parsing
+    try:
+        quantity = int(request.data.get("quantity", 1))
+    except (TypeError, ValueError):
+        quantity = 1
+
+    # Ensure item belongs to logged-in user
+    item = get_object_or_404(
+        CartItem,
+        id=item_id,
+        cart__user=request.user
+    )
+
     item.quantity = quantity
     item.save()
 
     return Response({"message": "Cart updated"})
-
 
 # =====================================================
 # ⭐ REVIEWS
