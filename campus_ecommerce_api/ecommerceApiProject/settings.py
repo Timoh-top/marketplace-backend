@@ -11,7 +11,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ======================
 SECRET_KEY = config("SECRET_KEY")
-
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = [
@@ -21,12 +20,13 @@ ALLOWED_HOSTS = [
 ]
 
 # ======================
-# CLOUDINARY CONFIG (FIXED)
+# CLOUDINARY INIT (CRITICAL FIX)
 # ======================
 cloudinary.config(
     cloud_name=config("CLOUDINARY_CLOUD_NAME"),
     api_key=config("CLOUDINARY_API_KEY"),
     api_secret=config("CLOUDINARY_API_SECRET"),
+    secure=True
 )
 
 # ======================
@@ -54,9 +54,7 @@ INSTALLED_APPS = [
 # ======================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
     'corsheaders.middleware.CorsMiddleware',
-
     'whitenoise.middleware.WhiteNoiseMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -87,10 +85,9 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ======================
-# URLS / WSGI
+# ROOT
 # ======================
 ROOT_URLCONF = 'ecommerceApiProject.urls'
-
 WSGI_APPLICATION = 'ecommerceApiProject.wsgi.application'
 
 # ======================
@@ -117,7 +114,7 @@ TEMPLATES = [
 # ======================
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        default=config("DATABASE_URL"),
         conn_max_age=600
     )
 }
@@ -149,13 +146,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ======================
-# MEDIA
-# ======================
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# ======================
-# CLOUDINARY STORAGE
+# MEDIA (CLOUDINARY STORAGE)
 # ======================
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -181,7 +172,7 @@ SIMPLE_JWT = {
 }
 
 # ======================
-# AUTO SUPERUSER (TEMP FIX)
+# SUPERUSER AUTO (OPTIONAL)
 # ======================
 import django
 
@@ -194,10 +185,7 @@ def create_superuser():
     password = "timo1234"
 
     if not User.objects.filter(email=email).exists():
-        User.objects.create_superuser(
-            email=email,
-            password=password
-        )
+        User.objects.create_superuser(email=email, password=password)
 
 if os.environ.get("CREATE_SUPERUSER") == "True":
     try:

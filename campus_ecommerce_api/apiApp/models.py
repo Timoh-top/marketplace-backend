@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db.models import Avg
 import uuid
 
+from cloudinary.models import CloudinaryField
+
 
 # =====================================================
 # 👤 USER MANAGER
@@ -49,7 +51,9 @@ class CustomUser(AbstractUser):
         default="buyer"
     )
 
-    profile_picture = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    # ✔ Cloudinary FIX
+    profile_picture = CloudinaryField('image', blank=True, null=True)
+
     is_verified = models.BooleanField(default=False)
 
     first_name = models.CharField(max_length=150, blank=True, null=True)
@@ -92,14 +96,15 @@ class Category(models.Model):
 
 
 # =====================================================
-# 🛍 PRODUCT (FIXED + SAFE)
+# 🛍 PRODUCT (CLOUDINARY FIXED)
 # =====================================================
 class Product(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
-    image = models.ImageField(upload_to="products/", blank=True, null=True)
+    # ✔ Cloudinary FIX
+    image = CloudinaryField('image', blank=True, null=True)
 
     slug = models.SlugField(unique=True, blank=True)
 
@@ -119,9 +124,7 @@ class Product(models.Model):
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # =================================================
-    # 🔥 SAFE UNIQUE SLUG GENERATOR
-    # =================================================
+    # ✔ Slug generator
     def generate_unique_slug(self):
         base_slug = slugify(self.name)
         unique_slug = base_slug
@@ -139,9 +142,7 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-    # =================================================
-    # ⭐ FIXED AVERAGE RATING (NO MORE CRASH)
-    # =================================================
+    # ✔ Safe rating
     def average_rating(self):
         return self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0
 
@@ -150,7 +151,7 @@ class Product(models.Model):
 
 
 # =====================================================
-# ⭐ REVIEW (FIXED RELATIONSHIP)
+# ⭐ REVIEW (FIXED — ADDED created_at)
 # =====================================================
 class Review(models.Model):
     product = models.ForeignKey(
@@ -164,7 +165,7 @@ class Review(models.Model):
     rating = models.PositiveIntegerField()
     review = models.TextField(blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)  # ✔ FIXED
 
     class Meta:
         unique_together = ("product", "user")
@@ -174,7 +175,7 @@ class Review(models.Model):
 
 
 # =====================================================
-# 🛒 CART (SIMPLIFIED + SAFE)
+# 🛒 CART
 # =====================================================
 class Cart(models.Model):
     user = models.OneToOneField(
